@@ -1,0 +1,5 @@
+buidl @ git+https://github.com/buidl-bitcoin/buidl-python@c0b7d57
+jupyter
+didcomm-messaging[askar,did-peer]
+websockets
+aiojobs
