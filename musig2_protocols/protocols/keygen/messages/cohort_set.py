@@ -1,4 +1,4 @@
-from ...messaging.base import BaseMessage
+from ....messaging.base import BaseMessage
 from ..message_types import COHORT_SET
 
 class CohortSetMessage(BaseMessage):

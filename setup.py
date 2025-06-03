@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="musig2-protocol",
+    name="musig2-protocols",
     version="0.1.0",
-    packages=find_packages(where="lib"),
-    package_dir={"": "lib"},
+    packages=find_packages(),
     install_requires=[
         "did-peer-2",
         "aries-askar",

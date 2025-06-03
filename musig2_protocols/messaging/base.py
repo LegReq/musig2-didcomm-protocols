@@ -25,7 +25,7 @@ class BaseMessage:
         self.type = msg_type
         self.id = str(uuid.uuid4())
         self.to = to
-        self.from_ = frm
+        self.frm = frm
         self.thread_id = thread_id
         self.body = body or {}
 
@@ -35,9 +35,27 @@ class BaseMessage:
             "type": self.type,
             "id": self.id,
             "to": self.to,
-            "from": self.from_,
+            "from": self.frm,
             "body": self.body
         }
         if self.thread_id:
             msg_dict["thread_id"] = self.thread_id
         return msg_dict 
+    
+    @classmethod
+    def from_dict(cls, msg_dict: Dict):
+        """Create a message instance from a dictionary.
+        
+        Args:
+            msg_dict: Dictionary containing the message data
+            
+        Returns:
+            BaseMessage: A new instance of the message class
+        """
+        return cls(
+            msg_type=msg_dict["type"],
+            to=msg_dict["to"], 
+            frm=msg_dict["from"],
+            thread_id=msg_dict.get("thread_id"),
+            body=msg_dict.get("body", {})
+        )

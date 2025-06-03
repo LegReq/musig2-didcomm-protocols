@@ -20,9 +20,14 @@ Prerequisites (Python 3.8)
 
 `pip install -e .`
 
-4. Run the example
+4. Run the examples
 
+Generate musig2 Bitcoin address with 5 participans
 `python examples/musig2_keygen_example.py`
+
+Generate musig2 Bitcoin address with 5 participans and coordinate a spend from that address
+ `python examples/musig2_sign.py`
+
 
 
 

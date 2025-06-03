@@ -1,4 +1,4 @@
-MESSAGE_PREFIX = "https://example.com/"
+MESSAGE_PREFIX = "https://btc1.tools/"
 
 COHORT_ADVERT = f"{MESSAGE_PREFIX}musig2/keygen/cohort_advert"
 COHORT_INVITE = f"{MESSAGE_PREFIX}musig2/keygen/cohort_invite"
