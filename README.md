@@ -26,7 +26,7 @@ Prerequisites (Python 3.8)
 
 5. Generate musig2 Bitcoin address with 5 participans and coordinate a spend from that address
 
-`python examples/musig2_sign.py`
+`python examples/musig2_signing.py`
 
 
 

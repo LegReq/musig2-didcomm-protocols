@@ -3,3 +3,4 @@ jupyter
 didcomm-messaging[askar,did-peer]
 websockets
 aiojobs
+
