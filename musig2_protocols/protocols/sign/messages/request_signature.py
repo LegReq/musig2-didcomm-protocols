@@ -17,24 +17,35 @@ class RequestSignatureMessage(BaseMessage):
             data: Additional data that can be used to customise the signature request. This is where we can send the btc1 payload hash.
         """
         thread_id = thread_id if thread_id else str(uuid.uuid4())
-        super().__init__(REQUEST_SIGNATURE, to, frm, thread_id)
-        self.cohort_id = cohort_id
-        self.data = data
+        body = {
+            "cohort_id": cohort_id,
+            # TODO: Review use of data field. This is to make the protocol messages generic, rather than btc1 specific. 
+            # Is this a good idea?
+            "data": data
+        }
+        super().__init__(REQUEST_SIGNATURE, to, frm, thread_id, body)
 
-    def to_dict(self) -> dict:
-        """Convert the message to a dictionary."""
-        msg_dict = super().to_dict()
-        msg_dict["cohort_id"] = self.cohort_id
-        msg_dict["data"] = self.data
-        return msg_dict 
+    @property
+    def data(self) -> str:
+        return self.body["data"]
+    
+    @property
+    def cohort_id(self) -> str:
+        return self.body["cohort_id"]
+    
+    @property
+    def session_id(self) -> str:
+        return self.body["session_id"]
     
     @classmethod
     def from_dict(cls, msg_dict: Dict):
         """Create a message instance from a dictionary."""
+        if msg_dict["type"] != REQUEST_SIGNATURE:
+            raise ValueError(f"Invalid message type: {msg_dict['type']}")
         return cls(
             to=msg_dict["to"],
             frm=msg_dict["from"],
-            cohort_id=msg_dict["cohort_id"],
-            thread_id=msg_dict["thread_id"],
-            data=msg_dict["data"]
+            cohort_id=msg_dict["body"]["cohort_id"],
+            thread_id=msg_dict.get("thread_id"),
+            data=msg_dict["body"]["data"]
         )

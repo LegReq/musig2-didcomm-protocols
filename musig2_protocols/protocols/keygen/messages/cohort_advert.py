@@ -1,24 +1,52 @@
 from ....messaging.base import BaseMessage
 from ..message_types import COHORT_ADVERT
+from typing import Dict
 
 class CohortAdvertMessage(BaseMessage):
     """Message for announcing a new cohort."""
 
 
-    def __init__(self, to: str, frm: str, thread_id: str, btc_network: str = "mainnet"):
+    def __init__(self, to: str, frm: str, cohort_id: str, cohort_size: int, thread_id: str = None, btc_network: str = "mainnet"):
         """Initialize a new cohort message.
         
         Args:
             to: The recipient's DID
             frm: The coordinator's DID
-            thread_id: The cohort's ID
-            btc_network: The Bitcoin network to use
+            thread_id: The thread id of the message (optional)
+            cohort_id: The cohort's ID
+            cohort_size: The size of the cohort
+            btc_network: The Bitcoin network of the cohort
         """
-        super().__init__(COHORT_ADVERT, to, frm, thread_id) 
-        self.btc_network = btc_network
+        body = {
+            "cohort_id": cohort_id,
+            "btc_network": btc_network,
+            "cohort_size": cohort_size
+        }
+        
+        super().__init__(COHORT_ADVERT, to, frm, thread_id, body) 
 
-    def to_dict(self) -> dict:
-        """Convert the message to a dictionary."""
-        msg_dict = super().to_dict()
-        msg_dict["btc_network"] = self.btc_network
-        return msg_dict
+    @property
+    def cohort_id(self) -> str:
+        return self.body["cohort_id"]
+
+    @property
+    def cohort_size(self) -> int:
+        return self.body["cohort_size"]
+    
+    @property
+    def btc_network(self) -> str:
+        return self.body["btc_network"]
+    
+    @classmethod
+    def from_dict(cls, msg_dict: Dict):
+        """Create a message instance from a dictionary."""
+        if msg_dict["type"] != COHORT_ADVERT:
+            raise ValueError(f"Invalid message type: {msg_dict['type']}")
+        return cls( 
+            to=msg_dict["to"],
+            frm=msg_dict["from"],
+            cohort_id=msg_dict["body"]["cohort_id"],
+            cohort_size=msg_dict["body"]["cohort_size"],
+            thread_id=msg_dict.get("thread_id"),
+            btc_network=msg_dict["body"]["btc_network"]
+        )

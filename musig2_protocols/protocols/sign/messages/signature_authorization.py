@@ -15,24 +15,38 @@ class SignatureAuthorizationMessage(BaseMessage):
             session_id: The session ID for this musig2 signing session
             partial_signature: A participants partial signature contribution to the signature.
         """
-        super().__init__(SIGNATURE_AUTHORIZATION, to, frm, session_id)
-        self.cohort_id = cohort_id
-        self.partial_signature = partial_signature
+        body = {
+            # TODO: Wondering again is session_id could just be the thread_id?
+            # My sesnse is that a thread is between two interacting parties sending messages back and forth. 
+            # Wheras the signing session is between the cohort participants and coordinator.
+            "session_id": session_id,
+            "cohort_id": cohort_id,
+            "partial_signature": partial_signature
+        }
+        thread_id = None
+        super().__init__(SIGNATURE_AUTHORIZATION, to, frm, thread_id, body)
 
-    def to_dict(self) -> dict:
-        """Convert the message to a dictionary."""
-        msg_dict = super().to_dict()
-        msg_dict["cohort_id"] = self.cohort_id
-        msg_dict["partial_signature"] = self.partial_signature
-        return msg_dict 
+    @property
+    def cohort_id(self) -> str:
+        return self.body["cohort_id"]
+    
+    @property
+    def partial_signature(self) -> int:
+        return self.body["partial_signature"]
+    
+    @property
+    def session_id(self) -> str:
+        return self.body["session_id"]
     
     @classmethod
     def from_dict(cls, msg_dict: dict):
         """Create a message instance from a dictionary."""
+        if msg_dict["type"] != SIGNATURE_AUTHORIZATION:
+            raise ValueError(f"Invalid message type: {msg_dict['type']}")
         return cls(
             to=msg_dict["to"],
             frm=msg_dict["from"],
-            cohort_id=msg_dict["cohort_id"],
-            session_id=msg_dict["thread_id"],
-            partial_signature=msg_dict["partial_signature"]
+            cohort_id=msg_dict["body"]["cohort_id"],
+            session_id=msg_dict["body"]["session_id"],
+            partial_signature=msg_dict["body"]["partial_signature"]
         )

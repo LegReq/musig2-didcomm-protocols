@@ -121,9 +121,10 @@ class Coordinator:
 
     async def _handle_join_cohort(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):
         """Handle join cohort requests from participants."""
-        cohort_id = message.get("thread_id")
-        participant = message["from"]
-        participant_pk = message.get("participant_pk")
+        opt_in_msg = CohortOptInMessage.from_dict(message)
+        cohort_id = opt_in_msg.cohort_id
+        participant = opt_in_msg.frm
+        participant_pk = opt_in_msg.participant_pk
         # Find the cohort
         cohort = next((c for c in self.cohorts if c.id == cohort_id), None)
         if cohort and participant not in cohort.participants:
@@ -152,24 +153,24 @@ class Coordinator:
             if (signing_session.cohort.id != nonce_contribution_msg.cohort_id):
                 raise ValueError(f"Nonce contribution for wrong cohort {nonce_contribution_msg.cohort_id}.")
             signing_session.add_nonce_contribution(nonce_contribution_msg.frm, nonce_contribution_msg.nonce_contribution)
-            print(f"Received nonce contribution from {nonce_contribution_msg.frm} for thread {nonce_contribution_msg.thread_id}")
+            print(f"Received nonce contribution from {nonce_contribution_msg.frm} for session {nonce_contribution_msg.session_id}")
 
             if signing_session.status == NONCE_CONTRIBUTIONS_RECEIVED:
                 await self.send_aggregated_nonce(signing_session)
         else:
-            print(f"Session {nonce_contribution_msg.thread_id} not found.")
+            print(f"Session {nonce_contribution_msg.session_id} not found.")
 
     async def _handle_signature_authorization(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):
         """Handle signature authorization messages from participants."""
         signature_authorization_msg = SignatureAuthorizationMessage.from_dict(message)
         signing_session = self.active_signing_sessions.get(signature_authorization_msg.cohort_id)
         if signing_session:
-            if signing_session.id != signature_authorization_msg.thread_id:
-                raise ValueError(f"Signature authorization message for wrong session {signature_authorization_msg.thread_id}.")
+            if signing_session.id != signature_authorization_msg.session_id:
+                raise ValueError(f"Signature authorization message for wrong session {signature_authorization_msg.session_id}.")
             if signing_session.status != AWAITING_PARTIAL_SIGNATURES:
                 raise ValueError(f"Partial signature received but not expected. Current status: {signing_session.status}")
             signing_session.add_partial_signature(signature_authorization_msg.frm, signature_authorization_msg.partial_signature)
-            print(f"Received partial signature from {signature_authorization_msg.frm} for session thread {signature_authorization_msg.thread_id}")
+            print(f"Received partial signature from {signature_authorization_msg.frm} for session {signature_authorization_msg.session_id}")
             if signing_session.status == PARTIAL_SIGNATURES_RECEIVED:
                 signature = signing_session.generate_final_signature()
                 print(f"Final signature: {signature.serialize().hex()}")
@@ -210,7 +211,9 @@ class Coordinator:
             msg = CohortAdvertMessage(
                 to=subscriber,
                 frm=self.did,
-                thread_id=cohort.id,
+                cohort_id=cohort.id,
+                cohort_size=cohort.min_participants,
+                thread_id=None,
                 btc_network=btc_network
             )
             try:

@@ -21,6 +21,7 @@ from .protocols.sign.models.signature_authorization import SignatureAuthorizatio
 from .protocols.sign.messages.nonce_contribution import NonceContributionMessage
 from .protocols.sign.messages.aggregated_nonce import AggregatedNonceMessage
 from .protocols.sign.messages.signature_authorization import SignatureAuthorizationMessage
+from .protocols.keygen.messages.cohort_set import CohortSetMessage
 from buidl.ecc import S256Point
 from buidl.tx import Tx
 
@@ -71,7 +72,9 @@ class BeaconParticipant:
             self._handle_aggregated_nonce
         )
 
-    def get_beacon_key(self, index: int = None):
+    # TODO: This is a bit of a hack. We should be using a HD wallet to manage the keys.
+    # TODO: refactor this so that it takes a cohort_id and returns the key for that cohort.
+    def get_cohort_key(self, index: int = None):
         """Get the beacon key for a given index."""
         if index is None:
             index = self.next_beacon_key_index
@@ -146,9 +149,10 @@ class BeaconParticipant:
     async def _handle_cohort_advert(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):
         print(f"BeaconParticipant {self.did} received new cohort announcement from {message['from']}")
         """Handle new cohort announcements from coordinators."""
-        cohort_id = message.get("thread_id")
-        btc_network = message.get("btc_network")
-        frm = message.get("from")
+        cohort_advert = CohortAdvertMessage.from_dict(message)
+        cohort_id = cohort_advert.cohort_id
+        btc_network = cohort_advert.btc_network
+        frm = cohort_advert.frm
         if frm not in self.coordinator_dids:
             print(f"BeaconParticipant {self.did} received unsolicited new cohort announcement from {frm}")
             return
@@ -161,12 +165,13 @@ class BeaconParticipant:
 
     async def _handle_cohort_set(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):
         """Handle cohort set messages from coordinators."""
-        cohort_id = message.get("thread_id")
+        cohort_set_msg = CohortSetMessage.from_dict(message)
+        cohort_id = cohort_set_msg.cohort_id
         cohort = next((c for c in self.cohorts if c.id == cohort_id), None)
         cohort_key_state = self.cohort_key_state[cohort_id]
-        participant_pk = self.get_beacon_key(cohort_key_state.key_index).point.sec().hex()
-        beacon_address = message.get("beacon_address")
-        cohort_keys = message.get("cohort_keys")
+        participant_pk = self.get_cohort_key(cohort_key_state.key_index).point.sec().hex()
+        beacon_address = cohort_set_msg.beacon_address
+        cohort_keys = cohort_set_msg.cohort_keys
         cohort.validate_cohort([participant_pk], cohort_keys, beacon_address)
         print(f"BeaconParticipant {self.didcomm.name} validated cohort {cohort_id} with beacon address {beacon_address}. Cohort status: {cohort.status}")
 
@@ -177,7 +182,7 @@ class BeaconParticipant:
         if cohort:
             signing_session = SignatureAuthorizationSession(
                 cohort=cohort,
-                id=authorization_request.thread_id,
+                id=authorization_request.session_id,
                 pending_tx=Tx.parse_hex(authorization_request.pending_tx, network=cohort.btc_network)
             )   
             # TODO: Validate the signing_session against a pending request
@@ -196,7 +201,7 @@ class BeaconParticipant:
         signing_session = self.active_signing_sessions.get(aggregated_nonce_msg.cohort_id)
         
         if signing_session:
-            if signing_session.id != aggregated_nonce_msg.thread_id:
+            if signing_session.id != aggregated_nonce_msg.session_id:
                 print(f"Aggregated nonce message for wrong session {aggregated_nonce_msg.session_id}.")
                 return
             
@@ -208,11 +213,11 @@ class BeaconParticipant:
                 print(f"Cohort key state not found for cohort {signing_session.cohort.id}")
                 return
             
-            participant_sk = self.get_beacon_key(cohort_key_state.key_index)
+            participant_sk = self.get_cohort_key(cohort_key_state.key_index)
             partial_sig = signing_session.generate_partial_signature(participant_sk)
             await self.send_partial_signature(signing_session, partial_sig)
 
-            print(f"Received aggregated nonce from {aggregated_nonce_msg.frm} for thread {aggregated_nonce_msg.thread_id}")
+            print(f"Received aggregated nonce from {aggregated_nonce_msg.frm} for session {aggregated_nonce_msg.session_id}")
 
 
     async def join_cohort(self, cohort_id: str, coordinator_did: str):
@@ -222,14 +227,16 @@ class BeaconParticipant:
 
         if cohort is not None:
             key_index = self.next_beacon_key_index
-            participant_pk = self.get_beacon_key().point.sec().hex()
+            participant_pk = self.get_cohort_key().point.sec().hex()
             cohort_key_state = CohortKeyState(cohort_id, self.did, key_index)
             self.cohort_key_state[cohort_id] = cohort_key_state
 
             msg = CohortOptInMessage(
                 to=coordinator_did,
                 frm=self.did,
-                thread_id=cohort_id,
+                cohort_id=cohort_id,
+                # TODO: Should I be using thread_id here? Could thread_id be the cohort_id?
+                thread_id=None,
                 participant_pk=participant_pk
             )
             await self.didcomm.send_message(

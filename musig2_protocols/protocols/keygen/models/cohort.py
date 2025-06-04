@@ -58,7 +58,8 @@ class Musig2Cohort:
         return CohortSetMessage(
             to=to,
             frm=frm,
-            thread_id=self.id,
+            cohort_id=self.id,
+            thread_id=None,
             beacon_address=self.beacon_address,
             cohort_keys=[pk.sec().hex() for pk in self.cohort_keys]
         )

@@ -15,24 +15,36 @@ class AggregatedNonceMessage(BaseMessage):
             session_id: The session ID for this musig2 signing session
             aggregated_nonce: The combined musig2 nonce values from all participants in the signing session.
         """
-        super().__init__(AGGREGATED_NONCE, to, frm, session_id)
-        self.aggregated_nonce = aggregated_nonce
-        self.cohort_id = cohort_id
+        body = {
+            "session_id": session_id,
+            "cohort_id": cohort_id,
+            "session_id": session_id,
+            "aggregated_nonce": aggregated_nonce
+        }
+        thread_id = None
+        super().__init__(AGGREGATED_NONCE, to, frm, thread_id, body)
 
-    def to_dict(self) -> dict:
-        """Convert the message to a dictionary."""
-        msg_dict = super().to_dict()
-        msg_dict["cohort_id"] = self.cohort_id
-        msg_dict["aggregated_nonce"] = self.aggregated_nonce
-        return msg_dict 
+    @property
+    def cohort_id(self) -> str:
+        return self.body["cohort_id"]
+    
+    @property
+    def session_id(self) -> str:
+        return self.body["session_id"]
+    
+    @property
+    def aggregated_nonce(self) -> list[str]:
+        return self.body["aggregated_nonce"]
     
     @classmethod
     def from_dict(cls, msg_dict: dict):
         """Create a message instance from a dictionary."""
+        if msg_dict["type"] != AGGREGATED_NONCE:
+            raise ValueError(f"Invalid message type: {msg_dict['type']}")
         return cls(
             to=msg_dict["to"],
             frm=msg_dict["from"],
-            cohort_id=msg_dict["cohort_id"],
-            session_id=msg_dict["thread_id"],
-            aggregated_nonce=msg_dict["aggregated_nonce"]
+            cohort_id=msg_dict["body"]["cohort_id"],
+            session_id=msg_dict["body"]["session_id"],
+            aggregated_nonce=msg_dict["body"]["aggregated_nonce"]
         )
