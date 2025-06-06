@@ -32,7 +32,7 @@ class BeaconCoordinator:
         self.cohorts: List[Musig2Cohort] = []
         self.active_signing_sessions: Dict[str, SignatureAuthorizationSession] = {}
         # TODO: Coodinator should be able to have many DIDs
-        self.did = await self.generate_did()
+        self.did = await self.didcomm.generate_did()
 
         # Register message handlers
         self.didcomm.register_message_handler(
@@ -56,47 +56,6 @@ class BeaconCoordinator:
             self._handle_signature_authorization
         )
 
-    #TODO: Refactor this to use a DIDComm service
-    async def generate_did(self):
-        """Generate a DID for the coordinator."""
-        verkey = Key.generate(KeyAlg.ED25519)
-        xkey = Key.generate(KeyAlg.X25519)
-
-        did = generate(
-            [
-                KeySpec.verification(
-                    multibase.encode(
-                        multicodec.wrap(
-                            "ed25519-pub",
-                            verkey.get_public_bytes()
-                        ),
-                        "base58btc",
-                    )
-                ),
-                KeySpec.key_agreement(
-                    multibase.encode(
-                        multicodec.wrap(
-                            "x25519-pub",
-                            xkey.get_public_bytes()
-                        ),
-                        "base58btc"
-                    )
-                ),
-            ],
-            [
-                {
-                    "type": "DIDCommMessaging",
-                    "serviceEndpoint": {
-                        "uri": self.didcomm.didcomm_websocket_url,
-                        "accept": ["didcomm/v2"],
-                        "routingKeys": [],
-                    },
-                },
-            ],
-        )
-        await self.didcomm.secrets.add_secret(AskarSecretKey(verkey, f"{did}#key-1"))
-        await self.didcomm.secrets.add_secret(AskarSecretKey(xkey, f"{did}#key-2"))
-        return did
 
     async def start(self):
         """Start the coordinator's DIDComm messaging service."""
@@ -107,17 +66,8 @@ class BeaconCoordinator:
         msg_sender = message["from"]
         if msg_sender not in self.subscribers:
             self.subscribers.append(msg_sender)
-            
-            # Send subscription acceptance
-            accept_msg = SubscribeAcceptMessage(
-                to=msg_sender,
-                frm=self.did
-            )
-            await self.didcomm.send_message(
-                accept_msg.to_dict(),
-                msg_sender,
-                self.did
-            )
+
+            await self.accept_subscription(msg_sender)
 
     async def _handle_join_cohort(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):
         """Handle join cohort requests from participants."""
@@ -174,6 +124,15 @@ class BeaconCoordinator:
             if signing_session.status == PARTIAL_SIGNATURES_RECEIVED:
                 signature = signing_session.generate_final_signature()
                 print(f"Final signature: {signature.serialize().hex()}")
+
+    async def accept_subscription(self, msg_sender: str):
+        """Accept a subscription request from a participant."""
+        print(f"Accepting subscription request from {msg_sender}")
+        accept_msg = SubscribeAcceptMessage(
+            to=msg_sender,
+            frm=self.did
+        )
+        await self.didcomm.send_message(accept_msg.to_dict(), msg_sender, self.did)
 
     async def send_aggregated_nonce(self, signing_session):
         """Send the aggregated nonce to all participants in the signing session.

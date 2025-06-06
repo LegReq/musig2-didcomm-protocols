@@ -52,6 +52,47 @@ class DIDCommService:
         # Track connection status
         self.connection_status = defaultdict(bool)
 
+    async def generate_did(self):
+        """Generate a DID for the coordinator."""
+        verkey = Key.generate(KeyAlg.ED25519)
+        xkey = Key.generate(KeyAlg.X25519)
+
+        did = generate(
+            [
+                KeySpec.verification(
+                    multibase.encode(
+                        multicodec.wrap(
+                            "ed25519-pub",
+                            verkey.get_public_bytes()
+                        ),
+                        "base58btc",
+                    )
+                ),
+                KeySpec.key_agreement(
+                    multibase.encode(
+                        multicodec.wrap(
+                            "x25519-pub",
+                            xkey.get_public_bytes()
+                        ),
+                        "base58btc"
+                    )
+                ),
+            ],
+            [
+                {
+                    "type": "DIDCommMessaging",
+                    "serviceEndpoint": {
+                        "uri": self.didcomm.didcomm_websocket_url,
+                        "accept": ["didcomm/v2"],
+                        "routingKeys": [],
+                    },
+                },
+            ],
+        )
+        await self.secrets.add_secret(AskarSecretKey(verkey, f"{did}#key-1"))
+        await self.secrets.add_secret(AskarSecretKey(xkey, f"{did}#key-2"))
+        return did
+
     async def get_connection(self, endpoint: str):
         """Get or create a websocket connection to an endpoint."""
         async with self.connection_locks[endpoint]:

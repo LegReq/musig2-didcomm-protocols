@@ -46,7 +46,7 @@ class BeaconParticipant:
         self.coordinator_dids: List[str] = []
         self.cohorts: List[Musig2Cohort] = []
         self.cohort_key_state:  Dict[str, CohortKeyState] = {}
-        self.did = await self.generate_did()
+        self.did = await self.didcomm.generate_did()
         self.active_signing_sessions: Dict[str, SignatureAuthorizationSession] = {}
 
         # Register message handlers
@@ -80,48 +80,6 @@ class BeaconParticipant:
             index = self.next_beacon_key_index
             self.next_beacon_key_index += 1
         return self.root_hdpriv.get_private_key(index)
-
-    async def generate_did(self):
-        """Generate a DID for the participant."""
-        verkey = Key.generate(KeyAlg.ED25519)
-        xkey = Key.generate(KeyAlg.X25519)
-
-        did = generate(
-            [
-                KeySpec.verification(
-                    multibase.encode(
-                        multicodec.wrap(
-                            "ed25519-pub",
-                            verkey.get_public_bytes()
-                        ),
-                        "base58btc",
-                    )
-                ),
-                KeySpec.key_agreement(
-                    multibase.encode(
-                        multicodec.wrap(
-                            "x25519-pub",
-                            xkey.get_public_bytes()
-                        ),
-                        "base58btc"
-                    )
-                ),
-            ],
-            [
-                {
-                    "type": "DIDCommMessaging",
-                    "serviceEndpoint": {
-                        "uri": self.didcomm.didcomm_websocket_url,
-                        "accept": ["didcomm/v2"],
-                        "routingKeys": [],
-                    },
-                },
-            ],
-        )
-
-        await self.didcomm.secrets.add_secret(AskarSecretKey(verkey, f"{did}#key-1"))
-        await self.didcomm.secrets.add_secret(AskarSecretKey(xkey, f"{did}#key-2"))
-        return did
 
     async def start(self):
         """Start the participant's DIDComm messaging service."""
