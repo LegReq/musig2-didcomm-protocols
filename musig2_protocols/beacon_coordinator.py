@@ -82,7 +82,7 @@ class BeaconCoordinator:
             cohort.cohort_keys.append(S256Point.parse(bytes.fromhex(participant_pk)))
             
             # If we have enough participants, we can start the key generation
-            if len(cohort.participants) >= cohort.min_participants:  # Minimum 2 participants
+            if len(cohort.participants) >= cohort.min_participants: 
                 await self._start_key_generation(cohort)
 
     async def _handle_request_signature(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):

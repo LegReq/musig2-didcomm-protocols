@@ -82,7 +82,7 @@ class DIDCommService:
                 {
                     "type": "DIDCommMessaging",
                     "serviceEndpoint": {
-                        "uri": self.didcomm.didcomm_websocket_url,
+                        "uri": self.didcomm_websocket_url,
                         "accept": ["didcomm/v2"],
                         "routingKeys": [],
                     },
