@@ -1,5 +1,5 @@
 import asyncio
-from musig2_protocols.coordinator import Coordinator
+from musig2_protocols.beacon_coordinator import BeaconCoordinator
 from musig2_protocols.beacon_participant import BeaconParticipant
 from buidl.hd import HDPrivateKey, secure_mnemonic
 from musig2_protocols.protocols.keygen.models.cohort import COHORT_SET_STATUS
@@ -17,7 +17,7 @@ async def main():
     charlie_hdpriv = HDPrivateKey.from_mnemonic(charlie_mnemonic)
 
     # Create instances with explicit ports
-    coordinator = await Coordinator.create(
+    coordinator = await BeaconCoordinator.create(
         name="Coordinator", 
         port=8767,
     )

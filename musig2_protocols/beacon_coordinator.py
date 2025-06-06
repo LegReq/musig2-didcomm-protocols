@@ -22,7 +22,7 @@ from .protocols.sign.messages.aggregated_nonce import AggregatedNonceMessage
 from .protocols.sign.messages.signature_authorization import SignatureAuthorizationMessage
 from .protocols.sign.models.signature_authorization import AWAITING_PARTIAL_SIGNATURES, NONCE_CONTRIBUTIONS_RECEIVED, PARTIAL_SIGNATURES_RECEIVED
 
-class Coordinator:
+class BeaconCoordinator:
     """Coordinates MuSig2 protocol operations between participants."""
 
     async def __init__(self, name: str, host: str = "localhost", port: int = 8767):
