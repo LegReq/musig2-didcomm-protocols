@@ -62,7 +62,7 @@ class MessageRouter:
 
         if handler_name:
             routing_context.delete(msg_type)
-            handler =  self.named_handlers.get(handler_name, None)
+            handler = self.named_handlers.get(handler_name, None)
             if handler:
                 await self.scheduler.spawn(
                     handler(msg, contact_context, thread_context) 

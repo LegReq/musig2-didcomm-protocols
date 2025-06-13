@@ -25,7 +25,7 @@ COHORT_STATUS = [
 class Musig2Cohort:
     """Represents a MuSig2 cohort with its participants and keys."""
     
-    def __init__(self, id: str = None, min_participants: int = 2, status: str = COHORT_ADVERTISED, btc_network: str = "mainnet", coordinator_did: str = None):
+    def __init__(self, id: str = None, min_participants: int = 2, status: str = COHORT_ADVERTISED, btc_network: str = "mainnet", coordinator_did: str = None, beacon_type="SMTAggregateBeacon"):
         self.id = id if id else str(uuid.uuid4())
         # Need to model participants as a channel DID, and a set of keys
         # May also want to model coordinator as a DID
@@ -35,6 +35,7 @@ class Musig2Cohort:
         self.min_participants = min_participants
         self.status = status
         self.btc_network = btc_network
+        self.beacon_type = beacon_type
         self.pending_signature_requests: Dict[str, str] = {}
         self.tr_merkle_root = None
 

@@ -6,7 +6,7 @@ class CohortAdvertMessage(BaseMessage):
     """Message for announcing a new cohort."""
 
 
-    def __init__(self, to: str, frm: str, cohort_id: str, cohort_size: int, thread_id: str = None, btc_network: str = "mainnet"):
+    def __init__(self, to: str, frm: str, cohort_id: str, cohort_size: int, beacon_type: str, thread_id: str = None, btc_network: str = "mainnet"):
         """Initialize a new cohort message.
         
         Args:
@@ -20,7 +20,8 @@ class CohortAdvertMessage(BaseMessage):
         body = {
             "cohort_id": cohort_id,
             "btc_network": btc_network,
-            "cohort_size": cohort_size
+            "cohort_size": cohort_size,
+            "beacon_type": beacon_type
         }
         
         super().__init__(COHORT_ADVERT, to, frm, thread_id, body) 
@@ -37,6 +38,10 @@ class CohortAdvertMessage(BaseMessage):
     def btc_network(self) -> str:
         return self.body["btc_network"]
     
+    @property
+    def beacon_type(self) -> str:
+        return self.body["beacon_type"]
+    
     @classmethod
     def from_dict(cls, msg_dict: Dict):
         """Create a message instance from a dictionary."""
@@ -48,5 +53,6 @@ class CohortAdvertMessage(BaseMessage):
             cohort_id=msg_dict["body"]["cohort_id"],
             cohort_size=msg_dict["body"]["cohort_size"],
             thread_id=msg_dict.get("thread_id"),
-            btc_network=msg_dict["body"]["btc_network"]
+            btc_network=msg_dict["body"]["btc_network"],
+            beacon_type=msg_dict["body"]["beacon_type"]
         )

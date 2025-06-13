@@ -88,6 +88,10 @@ class BeaconParticipant:
     async def subscribe_to_coordinator(self, coordinator_did: str):
         """Subscribe to a coordinator to receive cohort announcements."""
         if coordinator_did not in self.coordinator_dids:
+            # TODO: exploring the use of contact_context to store the DID for the coordinator
+            contact_context = InMemoryContextStorage(("contact", coordinator_did))
+            new_did = await self.didcomm.generate_did()
+            contact_context.set("did", new_did)
             msg = SubscribeMessage(
                 to=coordinator_did,
                 frm=self.did
@@ -95,7 +99,7 @@ class BeaconParticipant:
             await self.didcomm.send_message(
                 msg.to_dict(),
                 coordinator_did,
-                self.did
+                new_did
             )
 
     async def _handle_subscribe_accept(self, message: Dict, contact_context: InMemoryContextStorage, thread_context: InMemoryContextStorage):

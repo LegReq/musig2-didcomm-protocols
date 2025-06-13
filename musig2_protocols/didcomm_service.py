@@ -54,15 +54,15 @@ class DIDCommService:
 
     async def generate_did(self):
         """Generate a DID for the coordinator."""
-        verkey = Key.generate(KeyAlg.ED25519)
-        xkey = Key.generate(KeyAlg.X25519)
+        verkey = Key.generate(KeyAlg.K256)
+        xkey = Key.generate(KeyAlg.K256)
 
         did = generate(
             [
                 KeySpec.verification(
                     multibase.encode(
                         multicodec.wrap(
-                            "ed25519-pub",
+                            "secp256k1-pub",
                             verkey.get_public_bytes()
                         ),
                         "base58btc",
@@ -71,7 +71,7 @@ class DIDCommService:
                 KeySpec.key_agreement(
                     multibase.encode(
                         multicodec.wrap(
-                            "x25519-pub",
+                            "secp256k1-pub",
                             xkey.get_public_bytes()
                         ),
                         "base58btc"
@@ -175,6 +175,7 @@ class DIDCommService:
         try:
             async for packed_message in websocket:
                 print(f"{self.name}: Received raw message")
+                print(f"\nMessage: {json.dumps(json.loads(packed_message.decode()), indent=2)}\n")
                 try:
                     unpacked = await self.didcomm_messaging.packaging.unpack(
                         self.crypto, self.resolver, self.secrets, packed_message

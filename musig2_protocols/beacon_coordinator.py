@@ -159,10 +159,10 @@ class BeaconCoordinator:
             )
             print(f"Successfully sent aggregated nonce message to {participant}")
 
-    async def announce_new_cohort(self, min_participants: int, btc_network: str = "signet"):
+    async def announce_new_cohort(self, min_participants: int, btc_network: str = "signet", beacon_type: str = "SMTAggregateBeacon"):
         """Announce a new cohort to all subscribers."""
         print(f"Creating new cohort and announcing to {len(self.subscribers)} subscribers")
-        cohort = Musig2Cohort(min_participants=min_participants, btc_network=btc_network)
+        cohort = Musig2Cohort(min_participants=min_participants, btc_network=btc_network, beacon_type=beacon_type)
         self.cohorts.append(cohort)
         
         for subscriber in self.subscribers:
@@ -173,7 +173,8 @@ class BeaconCoordinator:
                 cohort_id=cohort.id,
                 cohort_size=cohort.min_participants,
                 thread_id=None,
-                btc_network=btc_network
+                btc_network=btc_network,
+                beacon_type=cohort.beacon_type
             )
             try:
                 await self.didcomm.send_message(
